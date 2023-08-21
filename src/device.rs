@@ -7,7 +7,6 @@
 //! * Register map (rev 3.2): https://arduino.ua/docs/RM-MPU-6000A.pdf
 //! * Datasheet (rev 3.2): https://www.cdiweb.com/datasheets/invensense/ps-mpu-6000a.pdf
 
-
 /// Gyro Sensitivity
 ///
 /// Measurements are scaled like this:
@@ -19,7 +18,8 @@
 ///     * https://makersportal.com/blog/2019/8/17/arduino-mpu6050-high-frequency-accelerometer-and-gyroscope-data-saver#accel_test
 ///     * https://github.com/kriswiner/MPU6050/wiki/2014-Invensense-Developer%27s-Conference
 ///     * rust MPU9250 driver on github
-pub const GYRO_SENS: (f32, f32, f32, f32) = (131., 65.5, 32.8, 16.4);
+pub const GYRO_SENS: (f32, f32, f32, f32, f32, f32, f32, f32) =
+    (2048., 1024., 512., 256., 128., 64., 32., 16.);
 
 /// Accelerometer Sensitivity
 ///
@@ -33,335 +33,212 @@ pub const GYRO_SENS: (f32, f32, f32, f32) = (131., 65.5, 32.8, 16.4);
 ///     * https://github.com/kriswiner/MPU6050/wiki/2014-Invensense-Developer%27s-Conference
 ///     * rust MPU9250 driver on github
 pub const ACCEL_SENS: (f32, f32, f32, f32) = (16384., 8192., 4096., 2048.);
-/// Temperature Offset
-pub const TEMP_OFFSET: f32 = 36.53;
 /// Temperature Sensitivity
-pub const TEMP_SENSITIVITY: f32 = 340.;
+pub const TEMP_SENSITIVITY: f32 = 256.;
 
-/// Motion Threshold Register
-pub const MOT_THR: u8 = 0x1F;
-/// Motion Duration Detection Register
-pub const MOT_DUR: u8 = 0x20;
-/// High Byte Register Gyro x orientation
-pub const GYRO_REGX_H: u8 = 0x43;
-/// High Byte Register Gyro y orientation
-pub const GYRO_REGY_H: u8 = 0x45;
-/// High Byte Register Gyro z orientation
-pub const GYRO_REGZ_H: u8 = 0x47;
-/// High Byte Register Calc roll
-pub const ACC_REGX_H : u8= 0x3b;
-/// High Byte Register Calc pitch
-pub const ACC_REGY_H : u8= 0x3d;
-/// High Byte Register Calc yaw
-pub const ACC_REGZ_H : u8= 0x3f;
-/// High Byte Register Temperature
-pub const TEMP_OUT_H : u8= 0x41;
-/// Slave address of Mpu6050
-pub const DEFAULT_SLAVE_ADDR: u8 = 0x68;
+/// Low Byte Register Gyro x orientation
+pub const GYRO_REGX_L: u8 = 0x3b;
+/// Low Byte Register Gyro y orientation
+pub const GYRO_REGY_L: u8 = 0x3d;
+/// Low Byte Register Gyro z orientation
+pub const GYRO_REGZ_L: u8 = 0x3f;
+/// Low Byte Register Calc roll
+pub const ACC_REGX_L: u8 = 0x35;
+/// Low Byte Register Calc pitch
+pub const ACC_REGY_L: u8 = 0x37;
+/// Low Byte Register Calc yaw
+pub const ACC_REGZ_L: u8 = 0x39;
+/// Low Byte Register Temperature
+pub const TEMP_OUT_L: u8 = 0x33;
+/// Slave address of Qmi8658
+pub const DEFAULT_SLAVE_ADDR: u8 = 0x6b;
+/// Device Identifier
+pub const WHOAMI_ID: u8 = 0x05;
 /// Internal register to check slave addr
-pub const WHOAMI: u8 = 0x75;
+pub const WHOAMI: u8 = 0x00;
+/// Soft Reset Register
+pub const RESET: u8 = 0x60;
 
 /// Describes a bit block from bit number 'bit' to 'bit'+'length'
 pub struct BitBlock {
     pub bit: u8,
-    pub length: u8
+    pub length: u8,
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 26: Configuration (DLPF, External signal)
-pub struct CONFIG;
+/// Register 2: Serial Interface and Sensor Enable
+pub struct CTRL1;
 
-impl CONFIG {
+impl CTRL1 {
     /// Base Address
-    pub const ADDR: u8 = 0x1a;
-    /// external Frame Synchronisation (FSYNC)
-    pub const EXT_SYNC_SET: BitBlock = BitBlock { bit: 5, length: 3};
-    /// Digital Low Pass Filter (DLPF) config
-    pub const DLPF_CFG: BitBlock = BitBlock { bit: 2, length: 3};
+    pub const ADDR: u8 = 0x02;
+    /// Enables 4-wire / 3-wire (0/1) SPI interface
+    pub const SIM: u8 = 7;
+    /// Serial interface (SPI, I2C, I3C) address non-increment / auto increment.
+    pub const ADDR_AI: u8 = 6;
+    /// Serial interface (SPI, I2C, I3C) read data Little-Endian / Big-Endian
+    pub const BE: u8 = 5;
+    /// INT2 pin output is enabled
+    pub const INT2_EN: u8 = 4;
+    /// INT1 pin output is enabled
+    pub const INT1_EN: u8 = 3;
+    /// FIFO interrupt is mapped to INT2 / INT1 pin
+    pub const FIFO_INT_SEL: u8 = 2;
+    /// Disable internal high-speed oscillator
+    pub const SENSOR_DISABLE: u8 = 0;
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 27: Gyro Config
-pub struct GYRO_CONFIG;
+/// Register 3: Accelerometer Settings
+pub struct CTRL2;
 
-impl GYRO_CONFIG {
-    pub const ADDR: u8 = 0x1b;
-    /// Gyro x axis self test bit
-    pub const XG_ST: u8 = 7;
-    /// Gyro y axis self test bit
-    pub const YG_ST: u8 = 6;
-    /// Gyro z axis self test bit
-    pub const ZG_ST: u8 = 5;
-    /// Gyro Config FS_SEL
-    pub const FS_SEL: BitBlock = BitBlock { bit: 4, length: 2 };
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug)]
-/// Register 28: Accel Config
-pub struct ACCEL_CONFIG;
-
-impl ACCEL_CONFIG {
+impl CTRL2 {
     /// Base Address
-    pub const ADDR: u8 = 0x1c;
-    /// Accel x axis self test bit
-    pub const XA_ST: u8 = 7;
-    /// Accel y axis self test bit
-    pub const YA_ST: u8 = 6;
-    /// Accel z axis self test bit
-    pub const ZA_ST: u8 = 5;
+    pub const ADDR: u8 = 0x03;
+    /// Accel self test bit
+    pub const A_ST: u8 = 7;
     /// Accel Config FS_SEL
-    pub const FS_SEL: BitBlock = BitBlock { bit: 4, length: 2};
-    /// Accel Config ACCEL_HPF
-    pub const ACCEL_HPF: BitBlock = BitBlock { bit: 2, length: 3};
+    pub const A_FS_SEL: BitBlock = BitBlock { bit: 6, length: 3 };
+    /// Accel output data rate (ODR)
+    pub const A_ODR: BitBlock = BitBlock { bit: 3, length: 4 };
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 55: INT Pin / Bypass Enable Configuration
-pub struct INT_PIN_CFG;
+/// Register 4: Gyroscope Settings
+pub struct CTRL3;
 
-impl INT_PIN_CFG {
-    /// Base Address
-    pub const ADDR: u8 = 0x37;
-    /// INT pin logic level
-    pub const INT_LEVEL: u8 = 7;
-    /// INT pin config
-    pub const INT_OPEN: u8 = 6;
-    /// Pulse (length)
-    pub const LATCH_INT_EN: u8 = 5;
-    /// INT clear conditions
-    pub const INT_RD_CLEAR: u8 = 4;
-    /// FSYNC PIN logic level
-    pub const FSYNC_INT_LEVEL: u8 = 3;
-    /// FSYNC PIN config
-    pub const FSYNC_INT_EN: u8 = 2;
-    /// i2c access/bypass
-    pub const I2C_BYPASS_EN: u8 = 1;
-    /// enable/disable reference clock output
-    pub const CLKOUT_EN: u8 = 0;
+impl CTRL3 {
+    pub const ADDR: u8 = 0x04;
+    /// Gyro self test bit
+    pub const G_ST: u8 = 7;
+    /// Gyro Config FS_SEL
+    pub const G_FS_SEL: BitBlock = BitBlock { bit: 6, length: 3 };
+    /// Gyro output data rate (ODR)
+    pub const G_ODR: BitBlock = BitBlock { bit: 3, length: 4 };
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 56: Interrupt Status
-pub struct INT_ENABLE;
+/// Register 6: Sensor Data Processing Settings
+pub struct CTRL5;
 
-impl INT_ENABLE {
+impl CTRL5 {
     /// Base Address
-    pub const ADDR: u8 = 0x38;
-    /// Generate interrupt Free Fall Detection
-    pub const FF_EN: u8 = 7;
-    /// Generate interrupt with Motion Detected
-    pub const MOT_EN: u8 = 6;
-    /// Generate iterrrupt when Zero Motion Detection
-    pub const ZMOT_EN: u8 = 5;
-    /// Generate iterrupt when FIFO buffer overflow
-    pub const FIFO_OFLOW_END: u8 = 4;
-    /// this  bit enables  any  of  the  I2C  Masterinterrupt  sources  to generate an interrupt
-    pub const I2C_MST_INT_EN: u8 = 3;
-    /// enables Data Ready interrupt, each time a write operation to all sensor registers completed
-    pub const DATA_RDY_EN: u8 = 0;
+    pub const ADDR: u8 = 0x06;
+    /// Gyro low-pass filter mode
+    pub const G_LPF_MODE: BitBlock = BitBlock { bit: 6, length: 2 };
+    /// Enable Gyroscope Low-Pass Filter with the mode given by G_LPF_MODE
+    pub const G_LPF_EN: u8 = 4;
+    /// Accel low-pass filter mode
+    pub const A_LPF_MODE: BitBlock = BitBlock { bit: 2, length: 2 };
+    /// Enable Accelerometer Low-Pass Filter with the mode given by A_LPF_MODE
+    pub const A_LPF_EN: u8 = 0;
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 58: Interrupt Status
-pub struct INT_STATUS;
+/// Register 8: Enable Sensors and Configure Data Reads
+pub struct CTRL7;
 
-impl INT_STATUS {
+impl CTRL7 {
     /// Base Address
-    pub const ADDR: u8 = 0x3a;
-    /// Free Fall Interrupt
-    pub const FF_INT: u8 = 7;
-    /// Motion Detection Interrupt
-    pub const MOT_INT: u8 = 6;
-    /// Zero Motion Detection Interrupt
-    pub const ZMOT_INT: u8 = 5;
-    /// FIFO buffer overflow
-    pub const FIFO_OFLOW_INT: u8 = 4;
-    /// i2c master interrupt has been generated
-    pub const I2C_MSF_INT: u8 = 3;
-    /// Data is ready
-    pub const DATA_RDY_INT: u8 = 0;
+    pub const ADDR: u8 = 0x08;
+    /// Enable SyncSample mode
+    pub const SYNC_SAMPLE_EN: u8 = 7;
+    /// DRDY(Data Ready) is disabled, is blocked from the INT2 pin
+    pub const DRDY_DIS: u8 = 5;
+    /// Gyroscope in Snooze Mode (only Drive enabled).
+    pub const G_SN: u8 = 4;
+    /// Enable Gyroscope
+    pub const G_EN: u8 = 1;
+    /// Enable Accelerometer
+    pub const A_EN: u8 = 0;
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 97: Motion Detection Status
-pub struct MOT_DETECT_STATUS;
+/// Register 9: Motion Detection Control
+pub struct CTRL8;
 
-impl MOT_DETECT_STATUS {
+impl CTRL8 {
     /// Base Address
-    pub const ADDR: u8 = 0x61;
-    /// motion  in  the  negative  X  axis  has generated a Motion detection interrupt
-    pub const MOT_XNEG: u8 = 7;
-    /// motion  in  the  positive  X  axis  has generated a Motion detection interrupt
-    pub const MOT_XPOS: u8 = 6;
-    /// motion  in  the  negative  Y  axis  has generated a Motion detection interrupt
-    pub const MOT_YNEG: u8 = 5;
-    /// motion  in  the positive  Y  axis  has generated a Motion detection interrupt
-    pub const MOT_YPOS: u8 = 4;
-    /// motion  in  the  negative  Z  axis  has generated a Motion detection interrupt.
-    pub const MOT_ZNEG: u8 = 3;
-    /// motion  in  the  positive  Z  axis  has generated a Motion detection interrupt
-    pub const MOT_ZPOS: u8 = 2;
-    /// Zero  Motion detection  interrupt  is generated
-    pub const MOT_ZRMOT: u8 = 0;
+    pub const ADDR: u8 = 0x09;
+    /// use INT1 / STATUSINT.bit7 as CTRL9 handshake
+    pub const HANDSHAKE_TYPE: u8 = 7;
+    /// INT2 / INT1 is used for Activity Detection event interrupt
+    pub const ACTIVITY_INT_SEL: u8 = 6;
+    /// enable Pedometer engine
+    pub const PEDO_EN: u8 = 4;
+    /// enable Significant Motion engine
+    pub const SIG_MOTION_EN: u8 = 3;
+    /// enable No Motion engine
+    pub const NO_MOTION_EN: u8 = 2;
+    /// enable Any Motion engine
+    pub const ANY_MOTION_EN: u8 = 1;
+    /// enable Tap engine
+    pub const TAP_EN: u8 = 0;
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 105: Motion Detection Control
-pub struct MOT_DETECT_CONTROL;
+/// Register 45: Sensor Data Available and Lock Register
+pub struct STATUS_INT;
 
-impl MOT_DETECT_CONTROL {
+impl STATUS_INT {
     /// Base Address
-    pub const ADDR: u8 = 0x69;
-    /// Additional delay
-    pub const ACCEL_ON_DELAY: BitBlock = BitBlock { bit: 5, length: 2};
-    ///  Free Fall count
-    pub const FF_COUNT: BitBlock = BitBlock { bit: 3, length: 2};
-    /// Motion Detection cound
-    pub const MOT_COUNT: BitBlock = BitBlock { bit: 1, length: 2};
+    pub const ADDR: u8 = 0x2d;
+    /// Indicates CTRL9 Command was done
+    pub const CMD_DONE: u8 = 7;
+    /// if SYNC_SAMPLE_EN: Sensor Data is locked else: INT1 level
+    pub const LOCKED: u8 = 1;
+    /// if SYNC_SAMPLE_EN: Sensor Data is available for reading else: INT2 level
+    pub const AVAIL: u8 = 0;
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 107: Power Management 1
-pub struct PWR_MGMT_1;
+/// Register 46: Output Data Status Register
+pub struct STATUS0;
 
-impl PWR_MGMT_1 {
+impl STATUS0 {
     /// Base Address
-    pub const ADDR: u8 = 0x6b;
-    /// Device Reset bit
-    pub const DEVICE_RESET: u8 = 7;
-    /// Sleep mode bit (Should be called "Low Power", doesn't actually sleep)
-    pub const SLEEP: u8 = 6;
-    /// Cycle bit for wake operations
-    pub const CYCLE: u8 = 5;
-    /// Temperature sensor enable/disable bit
-    pub const TEMP_DIS: u8 = 3;
-    /// Clock Control
-    pub const CLKSEL: BitBlock = BitBlock { bit: 2, length: 3 };
+    pub const ADDR: u8 = 0x2e;
+    /// Gyroscope new data available
+    pub const G_DA: u8 = 1;
+    /// Accelerometer new data available
+    pub const A_DA: u8 = 0;
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
-/// Register 107: Power Management 2
-pub struct PWR_MGMT_2;
+/// Register 47: Miscellaneous Status
+pub struct STATUS1;
 
-impl PWR_MGMT_2 {
+impl STATUS1 {
     /// Base Address
-    pub const ADDR: u8 = 0x6c;
-    /// Wake up frequency
-    pub const LP_WAKE_CTRL: BitBlock = BitBlock { bit: 7, length: 2};
-    /// disable accel axis x
-    pub const STBY_XA: u8 = 5;
-    /// disable accel axis y
-    pub const STBY_YA: u8 = 4;
-    /// disable accel axis z
-    pub const STBY_ZA: u8 = 3;
-    /// disable gyro  axis x
-    pub const STBY_XG: u8 = 2;
-    /// disable gyro  axis y
-    pub const STBY_YG: u8 = 1;
-    /// disable gyro  axis z
-    pub const STBY_ZG: u8 = 0;
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-/// Wake values
-pub enum LP_WAKE_CTRL {
-    /// 1.25 Hz
-    _1P25 = 0,
-    /// 2.5 Hz
-    _2P5,
-    /// 5 Hz
-    _5,
-    /// 10 Hz
-    _10,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-/// Accelerometer High Pass Filter Values
-pub enum ACCEL_HPF {
-    /// Cut off frequency: None
-    _RESET = 0,
-    /// Cut off frequency: 5 Hz
-    _5 = 1,
-    /// Cut off frequency: 2.5 Hz
-    _2P5 = 2,
-    /// Cut off frequency: 1.25 Hz
-    _1P25 = 3,
-    /// Cut off frequency: 0.63 Hz
-    _0P63 = 4,
-    /// When triggered, the filter holds the present sample. The filter output will be the
-    /// difference between the input sample and the held sample
-    _HOLD = 7
-}
-
-impl From<u8> for ACCEL_HPF {
-    fn from(range: u8) -> Self
-    {
-        match range {
-            0 => ACCEL_HPF::_RESET,
-            1 => ACCEL_HPF::_5,
-            2 => ACCEL_HPF::_2P5,
-            3 => ACCEL_HPF::_1P25,
-            4 => ACCEL_HPF::_0P63,
-            7 => ACCEL_HPF::_HOLD,
-            _ => ACCEL_HPF::_RESET,
-        }
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-/// Clock Source Select Values
-pub enum CLKSEL {
-    /// Internal 8MHz oscillator
-    OSCILL = 0,
-    /// PLL with X axis gyroscope reference
-    GXAXIS = 1,
-    /// PLL with Y axis gyroscope reference
-    GYAXIS = 2,
-    /// PLL with Z axis gyroscope reference
-    GZAXIS = 3,
-    /// PLL with external 32.768kHz reference
-    EXT_32p7 = 4,
-    /// PLL with external 19.2MHz reference
-    EXT_19P2 = 5,
-    /// Reserved
-    RESERV = 6,
-    /// Stops the clock and keeps the timing generator in reset
-    STOP = 7,
-}
-
-impl From<u8> for CLKSEL {
-    fn from(clk: u8) -> Self {
-        match clk {
-            0 => CLKSEL::OSCILL,
-            1 => CLKSEL::GXAXIS,
-            2 => CLKSEL::GYAXIS,
-            3 => CLKSEL::GZAXIS,
-            4 => CLKSEL::EXT_32p7,
-            5 => CLKSEL::EXT_19P2,
-            6 => CLKSEL::RESERV,
-            7 => CLKSEL::STOP,
-            _ => CLKSEL::GXAXIS
-        }
-    }
+    pub const ADDR: u8 = 0x2f;
+    /// Significant-Motion was detected
+    pub const SIG_MOTION: u8 = 7;
+    /// No-Motion was detected
+    pub const NO_MOTION: u8 = 6;
+    /// Any-Motion was detected
+    pub const ANY_MOTION: u8 = 5;
+    /// step was detected
+    pub const PEDOMETER: u8 = 4;
+    /// WoM was detected
+    pub const WOM: u8 = 2;
+    /// Tap was detected
+    pub const TAP: u8 = 1;
 }
 
 /// Defines accelerometer range/sensivity
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
 pub enum AccelRange {
     /// 2G
+    #[default]
     G2 = 0,
     /// 4G
     G4,
@@ -372,40 +249,51 @@ pub enum AccelRange {
 }
 
 /// Defines gyro range/sensitivity
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
 pub enum GyroRange {
-    /// 250 degrees
-    D250 = 0,
-    /// 500 degrees
-    D500,
-    /// 1000 degrees
-    D1000,
-    /// 2000 degrees
-    D2000,
+    /// 16 degrees
+    #[default]
+    D16 = 0,
+    /// 32 degrees
+    D32,
+    /// 64 degrees
+    D64,
+    /// 128 degrees
+    D128,
+    /// 256 degrees
+    D256,
+    /// 512 degrees
+    D512,
+    /// 1024 degrees
+    D1024,
+    /// 2048 degrees
+    D2048,
 }
 
 impl From<u8> for GyroRange {
-    fn from(range: u8) -> Self
-    {
+    fn from(range: u8) -> Self {
         match range {
-            0 => GyroRange::D250,
-            1 => GyroRange::D500,
-            2 => GyroRange::D1000,
-            3 => GyroRange::D2000,
-            _ => GyroRange::D250
+            0 => GyroRange::D16,
+            1 => GyroRange::D32,
+            2 => GyroRange::D64,
+            3 => GyroRange::D128,
+            4 => GyroRange::D256,
+            5 => GyroRange::D512,
+            6 => GyroRange::D1024,
+            7 => GyroRange::D2048,
+            _ => GyroRange::D16,
         }
     }
 }
 
 impl From<u8> for AccelRange {
-    fn from(range: u8) -> Self
-    {
+    fn from(range: u8) -> Self {
         match range {
             0 => AccelRange::G2,
             1 => AccelRange::G4,
             2 => AccelRange::G8,
             3 => AccelRange::G16,
-            _ => AccelRange::G2
+            _ => AccelRange::G2,
         }
     }
 }
@@ -426,10 +314,93 @@ impl GyroRange {
     // Converts gyro range to correction/scaling factor, see register sheet
     pub(crate) fn sensitivity(&self) -> f32 {
         match &self {
-            GyroRange::D250 => GYRO_SENS.0,
-            GyroRange::D500 => GYRO_SENS.1,
-            GyroRange::D1000 => GYRO_SENS.2,
-            GyroRange::D2000 => GYRO_SENS.3,
+            GyroRange::D16 => GYRO_SENS.0,
+            GyroRange::D32 => GYRO_SENS.1,
+            GyroRange::D64 => GYRO_SENS.2,
+            GyroRange::D128 => GYRO_SENS.3,
+            GyroRange::D256 => GYRO_SENS.4,
+            GyroRange::D512 => GYRO_SENS.5,
+            GyroRange::D1024 => GYRO_SENS.6,
+            GyroRange::D2048 => GYRO_SENS.7,
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+/// Output Data Rate.
+pub enum ODR_HZ {
+    /// N/A 7174.4 Hz
+    _NA_7174d4 = 0,
+    /// N/A 3587.2 Hz
+    _NA_3587d2 = 1,
+    /// N/A 1793.6 Hz
+    _NA_1793d6 = 2,
+    /// 1000 Hz 896.8 Hz
+    _1000_896d8 = 3,
+    /// 500 Hz 448.4 Hz
+    _500_448d4 = 4,
+    /// 250 Hz 224.2 Hz
+    _250_224d2 = 5,
+    /// 125 Hz 112.1 Hz
+    _125_112d1 = 6,
+    /// 62.5 Hz 56.05 Hz
+    _62d5_56d05 = 7,
+    /// 31.25 Hz 28.025 Hz
+    _31d25_28d025 = 8,
+    /// 128 Hz N/A
+    _128_NA = 12,
+    /// 21 Hz N/A
+    _21_NA = 13,
+    /// 11 Hz N/A
+    _11_NA = 14,
+    /// 3 Hz N/A
+    _3_NA = 15,
+}
+
+impl From<u8> for ODR_HZ {
+    fn from(range: u8) -> Self {
+        match range {
+            0 => ODR_HZ::_NA_7174d4,
+            1 => ODR_HZ::_NA_3587d2,
+            2 => ODR_HZ::_NA_1793d6,
+            3 => ODR_HZ::_1000_896d8,
+            4 => ODR_HZ::_500_448d4,
+            5 => ODR_HZ::_250_224d2,
+            6 => ODR_HZ::_125_112d1,
+            7 => ODR_HZ::_62d5_56d05,
+            8 => ODR_HZ::_31d25_28d025,
+            12 => ODR_HZ::_128_NA,
+            13 => ODR_HZ::_21_NA,
+            14 => ODR_HZ::_11_NA,
+            15 => ODR_HZ::_3_NA,
+            _ => ODR_HZ::_NA_7174d4,
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+/// Low-Pass Filter
+pub enum LPF_MODE {
+    /// 2.66% of ODR
+    _2_66_ODR = 0,
+    /// 3.63% of ODR
+    _3_63_ODR = 1,
+    /// 5.39% of ODR
+    _5_39_ODR = 2,
+    /// 13.37% of ODR
+    _13_37_ODR = 3,
+}
+
+impl From<u8> for LPF_MODE {
+    fn from(range: u8) -> Self {
+        match range {
+            0 => LPF_MODE::_2_66_ODR,
+            1 => LPF_MODE::_3_63_ODR,
+            2 => LPF_MODE::_5_39_ODR,
+            3 => LPF_MODE::_13_37_ODR,
+            _ => LPF_MODE::_2_66_ODR,
         }
     }
 }

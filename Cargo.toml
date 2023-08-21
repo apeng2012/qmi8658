@@ -1,13 +1,13 @@
 [package]
-name = "mpu6050"
-version = "0.1.6"
-authors = ["Julian Gaal <gjulian@uos.de>"]
+name = "qmi8658"
+version = "0.1.0"
+authors = ["Peng <peng89769975@163.com>"]
 edition = "2018"
 
-description = "Platform agnostic driver for MPU6050 6-axis IMU"
-repository = "https://github.com/juliangaal/mpu6050"
+description = "Platform agnostic driver for qmi8658 6-axis IMU"
+repository = "https://github.com/apeng2012/qmi8658"
 readme = "README.md"
-keywords = ["mpu6050", "imu", "embedded"]
+keywords = ["qmi8658", "imu", "embedded"]
 license = "MIT"
 
 [dependencies]
@@ -16,7 +16,7 @@ libm = "0.2.1"
 
 [dependencies.nalgebra]
 default-features = false
-version = "0.31.2"
+version = "0.32"
 
 [dev-dependencies]
 i2cdev = "0.5.1"
